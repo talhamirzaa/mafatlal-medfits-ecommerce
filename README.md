@@ -10,8 +10,9 @@ mini case study with code and screenshots.
 
 | Folder | Name | Type | Built |
 |---|---|---|---|
-| [`sections/responsive-slideshow-banners`](./sections/responsive-slideshow-banners) | Dynamic Slideshow Banner | Section | Jul 2026 |
-| [`sections/text-slider`](./sections/text-slider) | Text Slider (Dynamic Marquee) | Section | Jul 2026 |
+| [`responsive-slideshow-banners`](./responsive-slideshow-banners) | Dynamic Slideshow Banner | Section | Jul 2026 |
+| [`text-slider`](./text-slider) | Text Slider (Dynamic Marquee) | Section | Jul 2026 |
+| [`custom-option-product-page`](./custom-option-product-page) | Product Customized options | Snippet | May 2026 |
 
 ## Tech stack
 Liquid, theme editor schema (JSON settings/blocks), HTML, CSS (custom
