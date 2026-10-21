@@ -1,0 +1,1119 @@
+{% comment %}
+  Dynamic Marquee / Scrolling Text Section
+  Shopify Dawn compatible.
+
+  Features:
+  - Dynamic repeatable blocks
+  - Seamless infinite marquee
+  - No visible gaps or restart jumps
+  - Left / Right direction
+  - Desktop / Mobile speed
+  - Desktop / Mobile font size
+  - Desktop / Mobile height
+  - Desktop / Mobile spacing
+  - Pause on hover
+  - Optional separators
+  - Optional icons
+  - Optional links
+  - Per-block text/background colors
+  - Reduced-motion accessibility
+{% endcomment %}
+
+{%- liquid
+  assign section_id = 'dynamic-marquee-' | append: section.id
+  assign animation_name = 'marquee-scroll-' | append: section.id
+-%}
+
+<style>
+  #{{ section_id }} {
+    --marquee-bg: {{ section.settings.background_color }};
+    --marquee-text: {{ section.settings.text_color }};
+    --marquee-separator-color: {{ section.settings.separator_color }};
+
+    --marquee-height-desktop: {{ section.settings.desktop_height }}px;
+    --marquee-height-mobile: {{ section.settings.mobile_height }}px;
+
+    --marquee-font-size-desktop: {{ section.settings.desktop_font_size }}px;
+    --marquee-font-size-mobile: {{ section.settings.mobile_font_size }}px;
+
+    --marquee-gap-desktop: {{ section.settings.desktop_gap }}px;
+    --marquee-gap-mobile: {{ section.settings.mobile_gap }}px;
+
+    --marquee-speed-desktop: {{ section.settings.desktop_speed }}s;
+    --marquee-speed-mobile: {{ section.settings.mobile_speed }}s;
+
+    --marquee-letter-spacing: {{ section.settings.letter_spacing }}px;
+    --marquee-font-weight: {{ section.settings.font_weight }};
+
+    --marquee-padding-top: {{ section.settings.padding_top }}px;
+    --marquee-padding-bottom: {{ section.settings.padding_bottom }}px;
+
+    --marquee-distance: 0px;
+  }
+
+  #{{ section_id }} {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    position: relative;
+    isolation: isolate;
+
+    background: var(--marquee-bg);
+    color: var(--marquee-text);
+
+    padding-top: var(--marquee-padding-top);
+    padding-bottom: var(--marquee-padding-bottom);
+
+    box-sizing: border-box;
+  }
+
+  #{{ section_id }} .dynamic-marquee__viewport {
+    width: 100%;
+    max-width: 100%;
+    height: var(--marquee-height-desktop);
+
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+
+    position: relative;
+  }
+
+  /*
+    The track contains multiple identical groups.
+
+    JavaScript calculates the exact width of one group and
+    stores it in --marquee-distance.
+
+    CSS then moves the track by exactly that distance.
+
+    Because an identical group is immediately following it,
+    there is never an empty space between loops.
+  */
+  #{{ section_id }} .dynamic-marquee__track {
+    display: flex;
+    align-items: center;
+
+    width: max-content;
+    min-width: max-content;
+
+    flex-shrink: 0;
+
+    white-space: nowrap;
+
+    will-change: transform;
+
+    {% if section.settings.enable_scrolling %}
+      animation-name: {{ animation_name }};
+      animation-duration: var(--marquee-speed-desktop);
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-play-state: running;
+    {% endif %}
+  }
+
+  {% if section.settings.direction == 'right' %}
+    #{{ section_id }} .dynamic-marquee__track {
+      animation-direction: reverse;
+    }
+  {% else %}
+    #{{ section_id }} .dynamic-marquee__track {
+      animation-direction: normal;
+    }
+  {% endif %}
+
+  #{{ section_id }} .dynamic-marquee__group {
+    display: flex;
+    align-items: center;
+
+    width: max-content;
+    min-width: max-content;
+
+    flex-shrink: 0;
+
+    gap: var(--marquee-gap-desktop);
+  }
+
+  #{{ section_id }} .dynamic-marquee__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+    min-width: max-content;
+
+    height: 100%;
+
+    box-sizing: border-box;
+
+    font-size: var(--marquee-font-size-desktop);
+    font-weight: var(--marquee-font-weight);
+    letter-spacing: var(--marquee-letter-spacing);
+    line-height: 1.2;
+
+    color: var(--marquee-text);
+
+    text-align: {{ section.settings.text_alignment }};
+  }
+
+  #{{ section_id }} .dynamic-marquee__item-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.5em;
+
+    color: inherit;
+    text-decoration: none;
+
+    transition: opacity 0.2s ease;
+  }
+
+  #{{ section_id }} .dynamic-marquee__item-link:hover {
+    opacity: 0.75;
+  }
+
+  #{{ section_id }} .dynamic-marquee__item-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  #{{ section_id }} .dynamic-marquee__item-icon {
+    width: 1em;
+    height: 1em;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+  }
+
+  #{{ section_id }} .dynamic-marquee__item-icon img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+    display: block;
+  }
+
+  #{{ section_id }} .dynamic-marquee__separator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    color: var(--marquee-separator-color);
+
+    font-size: var(--marquee-font-size-desktop);
+
+    line-height: 1;
+
+    user-select: none;
+  }
+
+  /*
+    The animation distance is dynamically calculated by JavaScript.
+
+    Example:
+
+    Group width = 1600px
+
+    0px
+      ↓
+    -1600px
+
+    The next identical group is already sitting directly after
+    the first one, so the animation can restart seamlessly.
+  */
+  @keyframes {{ animation_name }} {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+
+    to {
+      transform: translate3d(
+        calc(var(--marquee-distance) * -1),
+        0,
+        0
+      );
+    }
+  }
+
+  /*
+    Static mode
+  */
+  #{{ section_id }} .dynamic-marquee__track.is-static {
+    width: 100%;
+    min-width: 100%;
+
+    justify-content:
+      {% if section.settings.text_alignment == 'center' %}
+        center
+      {% elsif section.settings.text_alignment == 'right' %}
+        flex-end
+      {% else %}
+        flex-start
+      {% endif %};
+
+    transform: none !important;
+    animation: none !important;
+  }
+
+  #{{ section_id }} .dynamic-marquee__track.is-static .dynamic-marquee__group {
+    width: auto;
+    min-width: 0;
+
+    flex-wrap: wrap;
+
+    justify-content:
+      {% if section.settings.text_alignment == 'center' %}
+        center
+      {% elsif section.settings.text_alignment == 'right' %}
+        flex-end
+      {% else %}
+        flex-start
+      {% endif %};
+  }
+
+  /*
+    Pause on hover
+  */
+  {% if section.settings.pause_on_hover %}
+    #{{ section_id }} .dynamic-marquee__viewport:hover .dynamic-marquee__track {
+      animation-play-state: paused;
+    }
+  {% endif %}
+
+  /*
+    Mobile
+  */
+  @media screen and (max-width: 749px) {
+
+    #{{ section_id }} .dynamic-marquee__viewport {
+      height: var(--marquee-height-mobile);
+    }
+
+    #{{ section_id }} .dynamic-marquee__track {
+      animation-duration: var(--marquee-speed-mobile);
+    }
+
+    #{{ section_id }} .dynamic-marquee__group {
+      gap: var(--marquee-gap-mobile);
+    }
+
+    #{{ section_id }} .dynamic-marquee__item {
+      font-size: var(--marquee-font-size-mobile);
+    }
+
+    #{{ section_id }} .dynamic-marquee__separator {
+      font-size: var(--marquee-font-size-mobile);
+    }
+  }
+
+  /*
+    Reduced motion accessibility
+  */
+  @media (prefers-reduced-motion: reduce) {
+
+    #{{ section_id }} .dynamic-marquee__track {
+      animation: none !important;
+      transform: none !important;
+
+      width: 100%;
+      min-width: 100%;
+
+      justify-content:
+        {% if section.settings.text_alignment == 'center' %}
+          center
+        {% elsif section.settings.text_alignment == 'right' %}
+          flex-end
+        {% else %}
+          flex-start
+        {% endif %};
+    }
+
+    #{{ section_id }} .dynamic-marquee__group {
+      width: auto;
+      min-width: 0;
+
+      flex-wrap: wrap;
+
+      justify-content:
+        {% if section.settings.text_alignment == 'center' %}
+          center
+        {% elsif section.settings.text_alignment == 'right' %}
+          flex-end
+        {% else %}
+          flex-start
+        {% endif %};
+    }
+
+    #{{ section_id }} .dynamic-marquee__group--clone {
+      display: none !important;
+    }
+  }
+
+  {% if section.settings.custom_css != blank %}
+    {{ section.settings.custom_css }}
+  {% endif %}
+</style>
+
+
+<div
+  id="{{ section_id }}"
+  class="dynamic-marquee{% if section.settings.custom_class != blank %} {{ section.settings.custom_class | escape }}{% endif %}"
+  role="region"
+  aria-label="{{ section.settings.accessibility_label | escape }}"
+>
+
+  <div class="dynamic-marquee__viewport">
+
+    <div
+      class="dynamic-marquee__track{% unless section.settings.enable_scrolling %} is-static{% endunless %}"
+      data-marquee-track
+      data-marquee-speed-desktop="{{ section.settings.desktop_speed }}"
+      data-marquee-speed-mobile="{{ section.settings.mobile_speed }}"
+      data-marquee-enabled="{{ section.settings.enable_scrolling }}"
+    >
+
+      <!-- ORIGINAL GROUP -->
+
+      <div
+        class="dynamic-marquee__group dynamic-marquee__group--original"
+        data-marquee-group
+      >
+
+        {% for block in section.blocks %}
+
+          {% if block.settings.text != blank %}
+
+            <div
+              class="dynamic-marquee__item"
+              {{ block.shopify_attributes }}
+
+              {% if block.settings.custom_background != blank %}
+                style="
+                  background-color: {{ block.settings.custom_background }};
+                  {% if block.settings.custom_text_color != blank %}
+                    color: {{ block.settings.custom_text_color }};
+                  {% endif %}
+                  padding-left: 0.5em;
+                  padding-right: 0.5em;
+                "
+              {% elsif block.settings.custom_text_color != blank %}
+                style="color: {{ block.settings.custom_text_color }};"
+              {% endif %}
+            >
+
+              {% if block.settings.link != blank %}
+
+                <a
+                  class="dynamic-marquee__item-link"
+                  href="{{ block.settings.link }}"
+                  {% if block.settings.open_new_tab %}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  {% endif %}
+                >
+
+              {% else %}
+
+                <span class="dynamic-marquee__item-link">
+
+              {% endif %}
+
+
+                  {% if block.settings.icon != blank %}
+
+                    <span class="dynamic-marquee__item-icon">
+
+                      {{
+                        block.settings.icon
+                        | image_url: width: 100
+                        | image_tag:
+                          loading: 'lazy',
+                          widths: '50, 75, 100',
+                          sizes: '1em',
+                          alt: block.settings.icon.alt
+                      }}
+
+                    </span>
+
+                  {% endif %}
+
+
+                  <span class="dynamic-marquee__item-text">
+                    {{ block.settings.text }}
+                  </span>
+
+
+              {% if block.settings.link != blank %}
+
+                </a>
+
+              {% else %}
+
+                </span>
+
+              {% endif %}
+
+            </div>
+
+
+            {% if section.settings.enable_separator and block.settings.show_separator %}
+
+              <span
+                class="dynamic-marquee__separator"
+                aria-hidden="true"
+              >
+                {{
+                  block.settings.separator
+                  | default: section.settings.separator_character
+                  | escape
+                }}
+              </span>
+
+            {% endif %}
+
+          {% endif %}
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+  (function () {
+
+    const sectionId = '{{ section_id }}';
+
+    function initMarquee() {
+
+      const section = document.getElementById(sectionId);
+
+      if (!section) {
+        return;
+      }
+
+      const track = section.querySelector('[data-marquee-track]');
+      const originalGroup = section.querySelector('[data-marquee-group]');
+      const viewport = section.querySelector('.dynamic-marquee__viewport');
+
+      if (!track || !originalGroup || !viewport) {
+        return;
+      }
+
+      /*
+        Prevent duplicate initialization.
+      */
+      if (track.dataset.marqueeInitialized === 'true') {
+        return;
+      }
+
+      track.dataset.marqueeInitialized = 'true';
+
+
+      /*
+        If scrolling is disabled, there is no need to
+        create duplicate groups.
+      */
+      if (track.dataset.marqueeEnabled !== 'true') {
+        return;
+      }
+
+
+      /*
+        Remove previously generated clones.
+
+        This is useful in Shopify Theme Editor when
+        blocks/settings are changed dynamically.
+      */
+      track
+        .querySelectorAll('.dynamic-marquee__group--clone')
+        .forEach(function (clone) {
+          clone.remove();
+        });
+
+
+      /*
+        Create enough copies of the original group.
+
+        We need enough content to ensure that while the
+        first group is leaving the viewport, another
+        identical group is always visible.
+      */
+      function createClones() {
+
+        track
+          .querySelectorAll('.dynamic-marquee__group--clone')
+          .forEach(function (clone) {
+            clone.remove();
+          });
+
+
+        const groupWidth = originalGroup.getBoundingClientRect().width;
+        const viewportWidth = viewport.getBoundingClientRect().width;
+
+
+        if (!groupWidth) {
+          return;
+        }
+
+
+        /*
+          Minimum number of groups required.
+
+          We create at least 3 groups.
+
+          If the content is very short compared to the viewport,
+          additional groups are automatically added.
+        */
+        const requiredGroups = Math.max(
+          3,
+          Math.ceil(viewportWidth / groupWidth) + 2
+        );
+
+
+        for (let i = 1; i < requiredGroups; i++) {
+
+          const clone = originalGroup.cloneNode(true);
+
+          clone.classList.remove('dynamic-marquee__group--original');
+          clone.classList.add('dynamic-marquee__group--clone');
+
+          /*
+            Cloned links are hidden from screen readers because
+            the original group already provides the accessible
+            interactive content.
+          */
+          clone.setAttribute('aria-hidden', 'true');
+
+          /*
+            Remove Shopify editor attributes from clones.
+          */
+          clone
+            .querySelectorAll('[data-shopify-editor-block]')
+            .forEach(function (element) {
+              element.removeAttribute('data-shopify-editor-block');
+            });
+
+          track.appendChild(clone);
+        }
+
+
+        /*
+          The animation moves exactly one ORIGINAL group.
+
+          This is the key to the seamless loop.
+        */
+        track.style.setProperty(
+          '--marquee-distance',
+          groupWidth + 'px'
+        );
+      }
+
+
+      /*
+        Initial setup.
+      */
+      createClones();
+
+
+      /*
+        Recalculate when the browser size changes.
+      */
+      let resizeTimer;
+
+      window.addEventListener('resize', function () {
+
+        clearTimeout(resizeTimer);
+
+        resizeTimer = setTimeout(function () {
+
+          /*
+            Pause animation while dimensions are recalculated.
+          */
+          track.style.animationPlayState = 'paused';
+
+          createClones();
+
+          /*
+            Resume after recalculation.
+          */
+          requestAnimationFrame(function () {
+
+            track.style.animationPlayState = '';
+
+          });
+
+        }, 150);
+
+      });
+
+
+      /*
+        Images can change the width of the group after
+        the initial page load.
+
+        Recalculate after images have loaded.
+      */
+      const images = originalGroup.querySelectorAll('img');
+
+      images.forEach(function (image) {
+
+        if (!image.complete) {
+
+          image.addEventListener(
+            'load',
+            function () {
+              createClones();
+            },
+            { once: true }
+          );
+
+        }
+
+      });
+
+    }
+
+
+    /*
+      Normal storefront load.
+    */
+    if (document.readyState === 'loading') {
+
+      document.addEventListener(
+        'DOMContentLoaded',
+        initMarquee
+      );
+
+    } else {
+
+      initMarquee();
+
+    }
+
+
+    /*
+      Shopify Theme Editor support.
+
+      This makes the marquee reinitialize when the merchant
+      changes settings, adds blocks, deletes blocks, etc.
+    */
+    document.addEventListener(
+      'shopify:section:load',
+      function (event) {
+
+        if (
+          event.detail &&
+          event.detail.sectionId === '{{ section.id }}'
+        ) {
+
+          const loadedSection = document.getElementById(sectionId);
+
+          if (loadedSection) {
+
+            const loadedTrack =
+              loadedSection.querySelector('[data-marquee-track]');
+
+            if (loadedTrack) {
+              loadedTrack.dataset.marqueeInitialized = 'false';
+            }
+
+          }
+
+          initMarquee();
+
+        }
+
+      }
+    );
+
+  })();
+</script>
+
+
+{% schema %}
+{
+  "name": "Dynamic marquee",
+  "tag": "section",
+  "class": "section section-dynamic-marquee",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_scrolling",
+      "label": "Enable scrolling",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "Scrolling direction",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "pause_on_hover",
+      "label": "Pause animation on hover",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "accessibility_label",
+      "label": "Accessibility label",
+      "default": "Announcements"
+    },
+
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#F3F3F3"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#121212"
+    },
+    {
+      "type": "color",
+      "id": "separator_color",
+      "label": "Separator color",
+      "default": "#121212"
+    },
+
+    {
+      "type": "header",
+      "content": "Desktop"
+    },
+    {
+      "type": "range",
+      "id": "desktop_height",
+      "label": "Desktop height",
+      "min": 20,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "desktop_font_size",
+      "label": "Desktop font size",
+      "min": 10,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "desktop_gap",
+      "label": "Desktop item spacing",
+      "min": 5,
+      "max": 200,
+      "step": 5,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "desktop_speed",
+      "label": "Desktop scrolling speed",
+      "info": "Lower seconds = faster scrolling. Higher seconds = slower scrolling.",
+      "min": 5,
+      "max": 100,
+      "step": 1,
+      "unit": "sec",
+      "default": 30
+    },
+
+    {
+      "type": "header",
+      "content": "Mobile"
+    },
+    {
+      "type": "range",
+      "id": "mobile_height",
+      "label": "Mobile height",
+      "min": 20,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 44
+    },
+    {
+      "type": "range",
+      "id": "mobile_font_size",
+      "label": "Mobile font size",
+      "min": 9,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "mobile_gap",
+      "label": "Mobile item spacing",
+      "min": 5,
+      "max": 150,
+      "step": 5,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "mobile_speed",
+      "label": "Mobile scrolling speed",
+      "info": "Lower seconds = faster scrolling. Higher seconds = slower scrolling.",
+      "min": 5,
+      "max": 100,
+      "step": 1,
+      "unit": "sec",
+      "default": 25
+    },
+
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "font_weight",
+      "label": "Font weight",
+      "options": [
+        {
+          "value": "300",
+          "label": "Light"
+        },
+        {
+          "value": "400",
+          "label": "Regular"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semi-bold"
+        },
+        {
+          "value": "700",
+          "label": "Bold"
+        },
+        {
+          "value": "800",
+          "label": "Extra bold"
+        }
+      ],
+      "default": "400"
+    },
+    {
+      "type": "range",
+      "id": "letter_spacing",
+      "label": "Letter spacing",
+      "min": -2,
+      "max": 10,
+      "step": 0.5,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+
+    {
+      "type": "header",
+      "content": "Separators"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_separator",
+      "label": "Enable separators",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "separator_character",
+      "label": "Default separator",
+      "default": "•"
+    },
+
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+
+    {
+      "type": "header",
+      "content": "Advanced"
+    },
+    {
+      "type": "text",
+      "id": "custom_class",
+      "label": "Custom CSS class"
+    },
+    {
+      "type": "liquid",
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Optional custom CSS."
+    }
+  ],
+
+  "blocks": [
+    {
+      "type": "marquee_item",
+      "name": "Marquee item",
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "Free shipping on orders over $50"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_new_tab",
+          "label": "Open link in new tab",
+          "default": false
+        },
+        {
+          "type": "image_picker",
+          "id": "icon",
+          "label": "Icon"
+        },
+        {
+          "type": "color",
+          "id": "custom_text_color",
+          "label": "Custom text color"
+        },
+        {
+          "type": "color",
+          "id": "custom_background",
+          "label": "Custom background color"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_separator",
+          "label": "Show separator after this item",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "separator",
+          "label": "Custom separator",
+          "info": "Leave blank to use the section's default separator."
+        }
+      ]
+    }
+  ],
+
+  "presets": [
+    {
+      "name": "Dynamic marquee",
+      "blocks": [
+        {
+          "type": "marquee_item",
+          "settings": {
+            "text": "Free shipping on orders over $50"
+          }
+        },
+        {
+          "type": "marquee_item",
+          "settings": {
+            "text": "New collection is now live"
+          }
+        },
+        {
+          "type": "marquee_item",
+          "settings": {
+            "text": "10% off your first order"
+          }
+        },
+        {
+          "type": "marquee_item",
+          "settings": {
+            "text": "Shop our latest arrivals"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
