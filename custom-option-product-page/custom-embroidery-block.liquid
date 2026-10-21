@@ -1,0 +1,1828 @@
+
+  {% comment %}
+  -----------------------------------------------------------------------------
+  EMBROIDERY CUSTOMIZATION BLOCK
+  - Splits Preview into Left (Logo) and Right (Text).
+  - Fixed positioning for consistent look across screens.
+  - Handles Logo Upload with instant preview.
+  -----------------------------------------------------------------------------
+{% endcomment %}
+ 
+{% assign color_hex = product.metafields.custom.color_hex | downcase | strip %}
+{% assign embroidery_product = all_products['custom-embroidery'] %}
+{% assign embroidery_variant = embroidery_product.variants | where: 'id', 44485458264134 | first %}
+
+{%- assign emb_price_cents = 0 -%}
+{%- if embroidery_variant and embroidery_variant.price != blank -%}
+  {%- assign emb_price_cents = embroidery_variant.price | round | default: 0 -%}
+{%- endif -%}
+
+
+<div class="custom-embroidery-block"
+     {{ block.shopify_attributes }}
+     data-block-id="{{ block.id }}"
+     data-addon-variant-id="{{ embroidery_variant.id | default: '' }}"
+     data-emb-price-cents="{{ emb_price_cents }}"
+     data-product-id="{{ product.id }}"
+     data-product-handle="{{ product.handle }}"
+>
+
+  <!-- Toggle Row -->
+ <div class="embroidery-toggle-wrapper">
+  <label class="embroidery-toggle-label" for="emb-toggle-{{ block.id }}">
+    <input
+      id="emb-toggle-{{ block.id }}"
+      type="checkbox"
+      class="embroidery-trigger-checkbox"
+      name="properties[{{ block.settings.embroidery_title }}]"
+      value="Yes"
+    />
+    <span>{{ block.settings.embroidery_title }}</span>
+  </label>
+
+  <button
+    id="emb-open-{{ block.id }}"
+    type="button"
+    class="button button--secondary embroidery-modal-btn"
+    aria-haspopup="dialog"
+    aria-controls="EmbroideryModal-{{ block.id }}"
+    disabled
+  >
+    Customize
+  </button>
+</div>
+  <div class="embroidery-description rte">
+    {{ block.settings.embroidery_description }}
+  </div>
+
+  <!-- Modal (hidden by default) -->
+  <div class="embroidery-modal" id="EmbroideryModal-{{ block.id }}" role="dialog" aria-hidden="true" aria-labelledby="emb-modal-title-{{ block.id }}">
+    <div class="embroidery-modal__overlay" data-close-modal></div>
+
+    <div class="embroidery-modal__panel" role="document">
+      <!-- Header -->
+      <header class="embroidery-modal__header">
+        <h2 id="emb-modal-title-{{ block.id }}" class="embroidery-modal-title">ADD PERSONALISATION</h2>
+        <button type="button" class="embroidery-close-btn" data-close-modal aria-label="Close">
+          {{ 'icon-close.svg' | inline_asset_content }}
+        </button>
+      </header>
+
+      <!-- Content split left (preview) and right (controls) -->
+      <div class="embroidery-modal__content">
+        <!-- LEFT: Preview -->
+        <div class="embroidery-preview-column">
+          <div class="embroidery-preview-outer">
+            {% comment %} Product Preview Image {% endcomment %}
+             {% assign embroidery_image = 'Dr_coat.webp' | file_url %}
+              {% case color_hex %}
+                {% when '#a11212' %}
+                  {% assign embroidery_image = 'wine.webp' | file_url %}
+                {% when '#6f6544' %}
+                  {% assign embroidery_image = 'brown.webp' | file_url %}
+                {% when '#c6a27e' %}
+                  {% assign embroidery_image = 'brown.webp' | file_url %}
+                {% when '#5197e1' %}
+                  {% assign embroidery_image = 'ceil_blue.webp' | file_url %}
+                {% when '#0549c7' %}
+                  {% assign embroidery_image = 'royal_blue.webp' | file_url %}
+                {% when '#b3c0a5' %}
+                  {% assign embroidery_image = 'olive.webp' | file_url %}
+                  {% when '#a3e0cc' %}
+                {% assign embroidery_image = 'olive.webp' | file_url %}
+                {% when '#122f5e' %}
+                  {% assign embroidery_image = 'navy.webp' | file_url %}
+                {% when '#e61e3c' %}
+                  {% assign embroidery_image = 'hot_pink.webp' | file_url %}
+                {% when '#0d918f' %}
+                  {% assign embroidery_image = 'light_green.webp' | file_url %}
+              {% endcase %}
+            <img
+              class="embroidery-preview-image"
+              src="{{ embroidery_image }}"
+              data-default-src="{{ embroidery_preview_image | file_url }}"
+              alt="Embroidery Preview"
+              loading="eager"
+            />
+
+            <!-- OVERLAY CONTAINER: Holds Logo and Text in fixed positions -->
+            <div class="embroidery-overlays">
+              
+              <!-- LEFT SIDE: Logo Container -->
+              <div class="preview-logo-wrap">
+                <img src="" alt="" class="preview-logo-image" style="display:none;">
+                <div class="preview-placeholder-logo" style="display:none;">
+                  <span>Logo</span>
+                </div>
+              </div>
+
+              <!-- RIGHT SIDE: Text Container -->
+              <div class="preview-text-wrap" aria-hidden="true">
+                <div class="preview-text preview-font-block" data-preview-text>Line 1</div>
+                <div class="preview-text preview-font-block preview-subline" data-preview-subtext>Line 2</div>
+              </div>
+              
+            </div>
+
+            <!-- small hint / placement overlay -->
+            <div class="embroidery-preview-hint">Placement Preview</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Controls -->
+        <aside class="embroidery-controls-column">
+          <div class="embroidery-selected-row">
+            <div class="embroidery-selected-label">Embroidery Selected:</div>
+            <div class="embroidery-selected-price" data-embroidery-price>
+              {% if embroidery_variant %}
+                {{ embroidery_variant.price | money }}
+              {% else %}
+                {{ embroidery_product.price | money }}
+              {% endif %}
+            </div>
+          </div>
+
+          <form class="embroidery-form" id="embroidery-form-{{ block.id }}" novalidate>
+            
+            <!-- ADD LOGO (New Section) -->
+            <fieldset class="emb-fieldset emb-fieldset--logo">
+              <label class="emb-field-checkbox">
+                <input type="checkbox" id="add-logo-{{ block.id }}">
+                <span class="emb-field-checkbox-label">ADD LOGO (Left Side)</span>
+              </label>
+
+              <div class="emb-logo-inputs" style="display:none;">
+                <label class="emb-input-label" for="emb-file-{{ block.id }}">Upload Logo Image</label>
+                <div class="emb-file-upload-wrapper">
+                  <input id="emb-file-{{ block.id }}" type="file" name="properties[Embroidery Logo]" accept="image/png,image/jpeg,image/svg+xml" />
+                  <div class="emb-file-custom-text">
+                    <span class="emb-upload-icon">📁</span> Choose File...
+                  </div>
+                </div>
+                <small style="color:var(--emb-text-sub); font-size:11px; margin-top:8px; display:block; font-weight:lighter">Max size: 2MB. Recommended: 800x800px.<br> Position is fixed.</small>
+              </div>
+            </fieldset>
+
+            <!-- ADD TEXT -->
+            <fieldset class="emb-fieldset">
+              <label class="emb-field-checkbox">
+                <input type="checkbox" id="add-text-{{ block.id }}" checked>
+                <span class="emb-field-checkbox-label">ADD TEXT (Right Side)</span>
+              </label>
+
+              <div class="emb-text-inputs">
+                <label class="emb-input-label" for="emb-line1-{{ block.id }}">Line 1 <small class="char-count" data-count-for="line1-{{ block.id }}">0/22</small></label>
+                <div class="emb-input-with-style">
+                  <input id="emb-line1-{{ block.id }}" name="properties[Embroidery Line 1]" maxlength="22" placeholder="Line 1 (e.g., Dr. Aditi Sharma)" />
+                  <button type="button" class="emb-style-btn" title="Choose style">Aa</button>
+                </div>
+
+                <label class="emb-input-label optional" for="emb-line2-{{ block.id }}">Line 2 (optional) <small class="char-count" data-count-for="line2-{{ block.id }}">0/22</small></label>
+                <div class="emb-input-with-style">
+                  <input id="emb-line2-{{ block.id }}" name="properties[Embroidery Line 2]" maxlength="22" placeholder="Line 2 (e.g., MBBS)" />
+                  <button type="button" class="emb-style-btn" title="Choose style">Aa</button>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Text color swatches -->
+            <div class="emb-section">
+              <div class="emb-section-title">Text Color:</div>
+              <div class="emb-color-swatches" role="list">
+                <button type="button" class="emb-swatch emb-swatch--selected" data-color="#000000" aria-pressed="true" title="Black"></button>
+                <button type="button" class="emb-swatch" data-color="#FFD400" title="Yellow"></button>
+                <button type="button" class="emb-swatch" data-color="#BDBDBD" title="Grey"></button>
+                <button type="button" class="emb-swatch" data-color="#7CFC00" title="Lime"></button>
+                <button type="button" class="emb-swatch" data-color="#FF9AA2" title="Pink"></button>
+              </div>
+            </div>
+
+            <!-- Font type -->
+            <div class="emb-section">
+              <div class="emb-section-title">Font Type:</div>
+              <div class="emb-font-buttons" role="radiogroup" aria-label="Font Type">
+                <button type="button" class="emb-font-btn emb-font-btn--selected" data-font="block" aria-pressed="true">Block</button>
+                <button type="button" class="emb-font-btn" data-font="script" aria-pressed="false">Script</button>
+              </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="emb-controls-actions">
+              <button type="button" class="button button--secondary" data-close-modal>Cancel</button>
+              <button type="submit" class="button button--primary">Done</button>
+            </div>
+          </form>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+{%  if block.settings.allow_customization == false  %}
+
+  <style>
+
+    .custom-embroidery-block{
+      display: none !important;
+    }
+
+  </style>
+
+{% endif %}
+
+
+
+<style>
+/* --- MODERN EMBROIDERY STYLES (CSS ONLY - FINAL ADJUSTMENT) --- */
+
+:root {
+  --emb-primary: #4B2C87;
+  --emb-bg: #ffffff;
+  --emb-surface: #f8f9fb;
+  --emb-border: #e2e4e8;
+  --emb-text: #1a1a1a;
+  --emb-text-sub: #64748b;
+  --emb-radius-pill: 50px; 
+  --emb-radius-card: 12px;
+  --emb-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* =========================================
+   1. LAYOUT & MODAL (Base)
+   ========================================= */
+.custom-embroidery-block {
+  font-family: var(--emb-font);
+  color: var(--emb-text);
+  margin: 2rem 0;
+}
+
+.embroidery-modal {
+  position: fixed; inset: 0; z-index: 999999; display: none;
+}
+.embroidery-modal[aria-hidden="false"] {
+  display: flex !important; align-items: center; justify-content: center;
+}
+.embroidery-modal__overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+}
+.embroidery-modal__panel {
+  position: relative; width: 95%; max-width: 950px; height: 85vh;
+  background: var(--emb-bg); border-radius: var(--emb-radius-card);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Header */
+.embroidery-modal__header {
+  padding: 12px 20px; border-bottom: 1px solid var(--emb-border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.embroidery-modal-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Close Button */
+.embroidery-close-btn { 
+  background: none; border: none; cursor: pointer; 
+  font-size: 18px; color: var(--emb-text-sub);
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: background 0.2s;
+}
+.embroidery-close-btn:hover { background-color: var(--emb-surface); color: var(--emb-text); }
+.embroidery-close-btn::before { content: "✕"; display: block; line-height: 1; }
+.embroidery-close-btn svg { display: none; }
+
+/* Grid Layout */
+.embroidery-modal__content {
+  display: grid; grid-template-columns: 1.2fr 0.8fr; height: 100%; overflow: hidden;
+}
+.embroidery-description{ font-weight: normal; font-size: small; }
+.embroidery-toggle-wrapper{ font-weight:500; font-size: 14px; }
+
+/* =========================================
+   2. SCROLL SIDE (Right Column)
+   ========================================= */
+.embroidery-controls-column {
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden; 
+  background: #fff;
+  display: flex; flex-direction: column; gap: 0;
+  box-sizing: border-box; 
+}
+
+/* --- ACCORDION SYSTEM (Strict Widths) --- */
+.emb-fieldset {
+  border: 1px solid var(--emb-border);
+  border-radius: 12px;
+  padding: 0;
+  background: #fff;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  
+  /* FIXED WIDTHS */
+  width: 100%; 
+  max-width: 100%;
+  box-sizing: border-box; 
+  margin-bottom: 16px; 
+  display: block;
+}
+
+/* Active Border */
+.emb-fieldset:has(input:checked) {
+  border-color: var(--emb-primary);
+  box-shadow: 0 4px 12px rgba(75, 44, 135, 0.08);
+}
+
+/* Header */
+.emb-field-checkbox {
+  display: flex; align-items: center; width: 100%;
+  padding: 14px 16px;
+  background: var(--emb-surface); cursor: pointer; margin: 0; 
+  justify-content: space-between; box-sizing: border-box; 
+}
+.emb-field-checkbox input[type="checkbox"] { display: none; }
+.emb-field-checkbox-label {
+  font-weight: 700; font-size: 13px; color: var(--emb-text);
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* Icons */
+.emb-fieldset--logo .emb-field-checkbox-label::before {
+  content: "★"; color: var(--emb-primary); font-size: 14px;
+}
+.emb-fieldset:not(.emb-fieldset--logo) .emb-field-checkbox-label::before {
+  content: "Aa"; background: rgba(75, 44, 135, 0.1); color: var(--emb-primary);
+  padding: 2px 6px; border-radius: 4px; font-size: 11px;
+}
+
+/* Chevron */
+.emb-field-checkbox::after {
+  content: "▼"; font-size: 10px; color: var(--emb-text-sub); transition: transform 0.3s ease;
+}
+.emb-fieldset:has(input:checked) .emb-field-checkbox::after { transform: rotate(180deg); }
+
+/* Accordion Body */
+.emb-text-inputs,
+.emb-logo-inputs {
+  display: none; 
+  padding: 20px 16px;
+  background: #fff;
+  border-top: 1px solid var(--emb-border);
+  animation: slideDown 0.3s ease;
+  box-sizing: border-box; width: 100%;
+}
+
+.emb-fieldset:has(input:checked) .emb-text-inputs,
+.emb-fieldset:has(input:checked) .emb-logo-inputs {
+  display: block !important; 
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- FILE UPLOAD --- */
+.emb-file-upload-wrapper {
+  position: relative; width: 100%; box-sizing: border-box;
+}
+.emb-file-upload-wrapper input[type="file"] {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; z-index: 2;
+}
+.emb-file-custom-text {
+  border-radius: 12px; border: 1px dashed var(--emb-primary);
+  background: rgba(75, 44, 135, 0.03);
+  padding: 15px; font-size: 12px; font-weight: 600;
+  color: var(--emb-primary); text-align: center;
+  box-sizing: border-box; width: 100%; 
+}
+
+/* --- PILL INPUTS --- */
+.emb-input-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--emb-text-sub); margin-bottom: 6px; display: block;
+}
+.emb-input-with-style input {
+  width: 100%; border: 1px solid var(--emb-border);
+  background: var(--emb-surface);
+  border-radius: var(--emb-radius-pill); 
+  padding: 10px 16px; font-size: 13px; margin-bottom: 12px;
+  outline: none; transition: border 0.2s; box-sizing: border-box;
+}
+.emb-input-with-style input:focus { border-color: var(--emb-primary); background: #fff; }
+.emb-style-btn { display: none !important; }
+
+/* --- CONTROLS --- */
+.emb-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--emb-text-sub); margin-bottom: 8px; margin-top: 12px;
+}
+.emb-font-buttons { display: flex; gap: 8px; }
+.emb-font-btn {
+  flex: 1; padding: 8px 0;
+  border-radius: var(--emb-radius-pill); border: 1px solid var(--emb-border);
+  background: #fff; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.emb-font-btn--selected {
+  background: var(--emb-primary); color: #fff;
+  border-color: var(--emb-primary); box-shadow: 0 4px 10px rgba(75, 44, 135, 0.2);
+}
+.emb-color-swatches { display: flex; gap: 8px; }
+.emb-swatch {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;
+}
+.emb-swatch--selected { transform: scale(1.2); border: 2px solid var(--emb-primary); }
+
+/* Footer Action Buttons */
+.emb-controls-actions {
+  margin-top: auto; padding-top: 20px; display: flex; gap: 10px;
+}
+.emb-controls-actions button {
+  border-radius: var(--emb-radius-pill) !important;
+  padding: 12px 24px; font-size: 12px; font-weight: 700; text-transform: uppercase;
+  flex: 1; cursor: pointer; position: relative; overflow: hidden; box-shadow: none !important;
+}
+.emb-controls-actions button::after,
+.emb-controls-actions button::before { content: none !important; box-shadow: none !important; }
+.button--primary { background: var(--emb-primary); color: #fff; border: 1px solid var(--emb-primary) !important; }
+.button--primary:hover { background-color: #3b216e !important; }
+.button--secondary { background: #fff; border: 1px solid var(--emb-border) !important; color: var(--emb-text); }
+.button--secondary:hover { border-color: var(--emb-text) !important; }
+
+/* Selected Row */
+.embroidery-selected-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 12px; border-bottom: 0px solid var(--emb-border);
+  font-size: 13px; font-weight: 600;
+}
+.embroidery-selected-price { color: var(--emb-primary); font-weight: 800; font-size: 15px; }
+
+
+/* =========================================
+   3. PREVIEW SUMMARY CARD
+   ========================================= */
+.embroidery-summary-container { margin: 1.5rem 0; width: 100%; max-width: 450px; }
+.emb-summary {
+  display: flex !important; flex-direction: column !important;
+  background: var(--emb-bg) !important; border: 1px solid var(--emb-border) !important;
+  border-radius: 12px !important; overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important; padding: 0 !important;
+}
+.emb-summary-thumb {
+  width: 100% !important; height: 40px !important;
+  background: linear-gradient(90deg, var(--emb-primary), #6a4cba) !important;
+  color: white !important; display: flex !important;
+  flex-direction: row !important; align-items: center !important;
+  justify-content: space-between !important; padding: 0 16px !important;
+  font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase !important;
+}
+.emb-summary-thumb div { display: none !important; } 
+.emb-summary-thumb::before { content: "My Customization"; color:white !important; }
+.emb-summary > div:nth-child(2) {
+  flex: 1 !important; padding: 0 16px !important;
+  display: flex !important; flex-direction: column !important; width:100%;
+}
+.emb-summary [style*="font-weight:700"] { font-size: 16px !important; color: var(--emb-primary) !important; margin-bottom: 4px !important; }
+.emb-summary [style*="color:#333"] {
+  font-size: 12px !important; color: var(--emb-text-sub) !important;
+  display: flex !important; flex-direction: column !important; font-weight:normal;
+}
+.emb-summary strong { color: var(--emb-text); font-weight: 500 !important; margin-right: 4px; }
+.emb-summary > div:last-child {
+  width: 100% !important; display: flex !important;
+  flex-direction: row !important; border-left: none !important;
+  border-top: 1px solid var(--emb-border) !important;
+  background: var(--emb-surface) !important; height: 44px !important;
+}
+.emb-edit-btn, .emb-delete-btn {
+  flex: 1 !important; display: flex !important; align-items: center !important;
+  justify-content: center !important; font-size: 25px !important; 
+  font-weight: 600 !important; text-transform: uppercase !important;
+  background: transparent !important; border: none !important;
+  cursor: pointer !important; padding: 0 !important;
+}
+.emb-edit-btn { color: var(--emb-primary) !important; border-right: 1px solid var(--emb-border) !important; border-bottom: none !important; }
+.emb-delete-btn { color: #e11d48 !important; }
+
+/* =========================================
+   4. LEFT SIDE (Preview) + CONDITIONAL
+   ========================================= */
+.embroidery-preview-column { 
+  background: var(--emb-surface); border-right: 1px solid var(--emb-border); 
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.embroidery-preview-outer { position: relative; width: 100%; height: 100%; max-width: 600px; margin: 0 auto; }
+.embroidery-preview-image { width: 100%; height: 100%; object-fit: contain; display: block; }
+.embroidery-overlays { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.preview-logo-wrap {
+  position: absolute; top: 36%; left: 25%; width: 70px; height: 63px; 
+  display: flex; align-items: center; justify-content: center;
+}
+.embroidery-preview-outer:has(img[src*="Dr_coat"]) .preview-logo-wrap {
+  top: 46%; left: 21%;
+}
+.preview-logo-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+/* --- TEXT POSITION LOGIC --- */
+.preview-text-wrap {
+  position: absolute; 
+  top: 42%;
+  left: 65%; 
+  display: flex !important; flex-direction: column !important; 
+  align-items: flex-start !important; gap: 2px !important; transform: translateY(-50%);
+}
+.embroidery-preview-outer:has(img[src*="Dr_coat"]) .preview-text-wrap {
+  top: 52% !important;
+}
+
+.preview-text { line-height: 1.1; white-space: nowrap; }
+.preview-font-block { font-weight: 800; text-transform: uppercase; font-size: 14px; }
+.preview-font-script { font-family: "Georgia", serif; font-style: italic; font-size: 16px; }
+
+/* Toggle Row */
+.embroidery-toggle-wrapper {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border: 1px solid var(--emb-border); margin-bottom: 1rem;
+}
+.embroidery-modal-btn { padding: 10px 20px !important; font-size: 11px !important; }
+
+/* Mobile */
+@media (max-width: 900px) {
+  .embroidery-modal__content { grid-template-columns: 1fr; }
+  .embroidery-modal__panel { width: 100%; height: 100vh; border-radius: 0; }
+  .embroidery-preview-column { height: 320px; flex-shrink: 0; border-bottom: 1px solid var(--emb-border); border-right: none; }
+  
+  .preview-text-wrap { top: 40%; left: 56%; }
+  .embroidery-preview-outer:has(img[src*="Dr_coat"]) .preview-text-wrap { top: 44% !important; }
+
+  .preview-logo-wrap { top: 42%; left: 20%; }
+  .embroidery-preview-outer:has(img[src*="Dr_coat"]) .preview-logo-wrap { top: 44%; left: 18%; }
+}
+</style>
+
+
+<script>
+ 
+  function cstm_embd_call() {  
+
+    function formatMoneyFromCents(cents) {
+      cents = Number(cents) || 0;
+      try {
+        return (cents / 100).toLocaleString(undefined, {
+          style: 'currency',
+          currency: '{{ shop.currency }}'
+        });
+      } catch (e) {
+        return '₹' + (cents / 100).toFixed(2);
+      }
+    }
+
+    function createEl(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html.trim();
+      return div.firstChild;
+    }
+
+    async function fetchCart() {
+      try {
+        const r = await fetch('/cart.js', { credentials: 'same-origin' });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function removeCartItemByKey(itemKey) {
+      try {
+        const body = new URLSearchParams();
+        body.append('id', itemKey);
+        body.append('quantity', '0');
+        const r = await fetch('/cart/change.js', {
+          method: 'POST',
+          body: body.toString(),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          credentials: 'same-origin'
+        });
+        if (r.ok) setTimeout(() => cleanupOrphanAddonsOnCart(), 200);
+        return r.ok;
+      } catch (e) { return false; }
+    }
+
+    async function changeCartItemQuantity(itemKey, newQuantity) {
+      try {
+        const body = new URLSearchParams();
+        body.append('id', itemKey);
+        body.append('quantity', String(newQuantity));
+        const r = await fetch('/cart/change.js', {
+          method: 'POST',
+          body: body.toString(),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          credentials: 'same-origin'
+        });
+        if (!r.ok) throw new Error('change failed');
+        return await r.json();
+      } catch (e) { return null; }
+    }
+
+    // CLEANUP ORPHAN ADDONS
+    async function cleanupOrphanAddonsOnCart() {
+      try {
+        const cart = await fetchCart();
+        if (!cart) return;
+        
+        const mainCustomizationIds = new Set();
+        cart.items.forEach(item => {
+          const props = item.properties || {};
+          if (props['Customization ID'] && props['Embroidery Add-on'] !== 'Yes') {
+            mainCustomizationIds.add(String(props['Customization ID']));
+          }
+        });
+
+        const addonGroups = {};
+        const toRemoveKeys = new Set();
+
+        cart.items.forEach(item => {
+          const props = item.properties || {};
+          if (props['Embroidery Add-on'] === 'Yes') {
+            const cid = String(props['Customization ID'] || '');
+            if (!cid || !mainCustomizationIds.has(cid)) {
+              toRemoveKeys.add(item.key);
+              return;
+            }
+            addonGroups[cid] = addonGroups[cid] || [];
+            addonGroups[cid].push(item);
+          }
+        });
+
+        Object.keys(addonGroups).forEach(cid => {
+          const arr = addonGroups[cid];
+          if (arr.length > 1) {
+            arr.slice(1).forEach(item => toRemoveKeys.add(item.key));
+          }
+        });
+
+        for (const key of Array.from(toRemoveKeys)) {
+          await removeCartItemByKey(key);
+        }
+      } catch (e) { console.error('cleanupOrphanAddonsOnCart', e); }
+    }
+
+    window.__cleanupEmbroideryOrphans = cleanupOrphanAddonsOnCart;
+    document.addEventListener('cart:updated', () => setTimeout(() => cleanupOrphanAddonsOnCart(), 300));
+    document.addEventListener('cart:refresh', () => setTimeout(() => cleanupOrphanAddonsOnCart(), 300));
+
+    if (window.location.pathname.startsWith('/cart')) {
+
+    cleanupOrphanAddonsOnCart();
+
+    // Debounced cleanup — waits for DOM to settle after OCC re-renders buttons
+    let debounceTimer = null;
+    function debouncedCleanup(delay) {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        cleanupOrphanAddonsOnCart();
+      }, delay || 800);
+    }
+
+    function installCartInterceptor() {
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+        if (url.includes('/cart/change') || url.includes('/cart/update')) {
+          return originalFetch.apply(this, args).then(async (response) => {
+            if (response.ok) {
+              // Cancel any pending cleanup and schedule fresh ones
+              // 800ms: after Shopify cart API settles
+              // 2500ms: after OCC MutationObserver finishes re-rendering buttons
+              if (window.__embCleanupTimers) {
+                window.__embCleanupTimers.forEach(t => clearTimeout(t));
+              }
+              window.__embCleanupTimers = [
+                setTimeout(() => cleanupOrphanAddonsOnCart(), 800),
+                setTimeout(() => cleanupOrphanAddonsOnCart(), 2500)
+              ];
+            }
+            return response;
+          });
+        }
+        return originalFetch.apply(this, args);
+      };
+    }
+
+    // Triple install to beat OCC re-wrapping window.fetch
+    installCartInterceptor();
+    setTimeout(installCartInterceptor, 500);
+    setTimeout(installCartInterceptor, 1000);
+
+    // DOM observer — debounced so OCC's button re-renders don't spam cleanup
+    const cartHolder = document.querySelector('form[action="/cart"]') || document.body;
+    const mo = new MutationObserver(() => debouncedCleanup(800));
+    mo.observe(cartHolder, { childList: true, subtree: true });
+  }
+    
+  // PER-BLOCK LOGIC
+  function initEmbroideryBlock(root) {
+      if (root._embInitialized) return;
+      root._embInitialized = true;
+
+      try {
+        const blockId = root.getAttribute('data-block-id') || '';
+        const embPriceCentsAttr = parseInt(root.getAttribute('data-emb-price-cents') || '0', 10) || 0;
+        const addonVariantIdRaw = root.getAttribute('data-addon-variant-id') || '';
+        const addonVariantId = addonVariantIdRaw ? String(addonVariantIdRaw).trim() : '';
+
+        const checkbox = root.querySelector('.embroidery-trigger-checkbox');
+        const openBtn = root.querySelector('.embroidery-modal-btn');
+        const modal = document.getElementById('EmbroideryModal-' + blockId);
+        if (!checkbox || !openBtn || !modal) return;
+
+        const overlay = modal.querySelector('.embroidery-modal__overlay');
+        const closeBtns = modal.querySelectorAll('[data-close-modal]');
+        const form = modal.querySelector('.embroidery-form');
+        const priceEl = root.querySelector('[data-embroidery-price]');
+
+        if (priceEl && embPriceCentsAttr > 0) priceEl.textContent = formatMoneyFromCents(embPriceCentsAttr);
+
+        if (!modal.dataset.moved) {
+          document.body.appendChild(modal);
+          modal.dataset.moved = 'true';
+        }
+
+        const line1 = modal.querySelector('#emb-line1-' + blockId);
+        const line2 = modal.querySelector('#emb-line2-' + blockId);
+        const logoCheckbox = modal.querySelector('#add-logo-' + blockId);
+        const logoInput = modal.querySelector('#emb-file-' + blockId);
+        const logoCustomText = modal.querySelector('.emb-file-custom-text');
+        const logoInputsContainer = modal.querySelector('.emb-logo-inputs');
+
+        const previewText = modal.querySelector('[data-preview-text]');
+        const previewSub = modal.querySelector('[data-preview-subtext]');
+        const previewLogoImg = modal.querySelector('.preview-logo-image');
+        const previewLogoPlaceholder = modal.querySelector('.preview-placeholder-logo');
+
+        const swatches = Array.from(modal.querySelectorAll('.emb-swatch'));
+        const fontBtns = Array.from(modal.querySelectorAll('.emb-font-btn'));
+
+        swatches.forEach(btn => {
+          const colorVal = btn.dataset.color || btn.getAttribute('data-color') || '';
+          if (colorVal) btn.style.backgroundColor = colorVal;
+          btn.setAttribute('aria-label', btn.title || colorVal || 'color');
+        });
+
+        function syncButtonState() {
+          openBtn.disabled = !checkbox.checked;
+        }
+        checkbox.addEventListener('change', syncButtonState);
+        syncButtonState();
+
+        function openModal() { modal.setAttribute('aria-hidden', 'false'); }
+        function closeModal() { modal.setAttribute('aria-hidden', 'true'); }
+        openBtn.addEventListener('click', function () { if (!openBtn.disabled) openModal(); });
+        overlay?.addEventListener('click', closeModal);
+        closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') closeModal();
+        });
+
+        logoCheckbox.addEventListener('change', function () {
+          if (this.checked) {
+            logoInputsContainer.style.display = 'block';
+          } else {
+            logoInputsContainer.style.display = 'none';
+            logoInput.value = '';
+            previewLogoImg.src = '';
+            previewLogoImg.style.display = 'none';
+            previewLogoPlaceholder.style.display = 'none';
+          }
+        });
+
+        logoInput.addEventListener('change', function (e) {
+          const file = e.target.files[0];
+          if (file) {
+            logoCustomText.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+              previewLogoImg.src = evt.target.result;
+              previewLogoImg.style.display = 'block';
+              previewLogoPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+          } else {
+            logoCustomText.innerHTML = '<span class="emb-upload-icon">📁</span> Choose File...';
+            previewLogoImg.style.display = 'none';
+            previewLogoPlaceholder.style.display = 'none';
+          }
+        });
+
+        function updatePreview() {
+          const v1 = line1?.value?.trim() || '';
+          const v2 = line2?.value?.trim() || '';
+          if (previewText) previewText.textContent = v1 || 'Line 1';
+          if (previewSub) previewSub.textContent = v2 || '';
+        }
+        line1?.addEventListener('input', updatePreview);
+        line2?.addEventListener('input', updatePreview);
+        updatePreview();
+
+        swatches.forEach(btn => {
+          btn.addEventListener('click', function () {
+            swatches.forEach(s => s.classList.remove('emb-swatch--selected'));
+            this.classList.add('emb-swatch--selected');
+            const color = this.dataset.color || this.getAttribute('data-color') || '';
+            if (previewText) previewText.style.color = color;
+            if (previewSub) previewSub.style.color = color;
+          });
+        });
+
+        fontBtns.forEach(btn => {
+          btn.addEventListener('click', function () {
+            fontBtns.forEach(b => b.classList.remove('emb-font-btn--selected'));
+            this.classList.add('emb-font-btn--selected');
+            const font = this.dataset.font || 'block';
+            if (previewText) previewText.className = 'preview-text preview-font-' + font;
+            if (previewSub) previewSub.className = 'preview-text preview-subline preview-font-' + font;
+          });
+        });
+
+        let summaryContainer = root.querySelector('.embroidery-summary-container');
+        const toggleWrapper = root.querySelector('.embroidery-toggle-wrapper');
+        if (!summaryContainer) {
+          summaryContainer = document.createElement('div');
+          summaryContainer.className = 'embroidery-summary-container';
+          if (toggleWrapper && toggleWrapper.parentNode) toggleWrapper.parentNode.insertBefore(summaryContainer, toggleWrapper.nextSibling);
+          else root.appendChild(summaryContainer);
+        }
+
+        function readCustomizationFromModal() {
+          const l1 = line1?.value?.trim() || '';
+          const l2 = line2?.value?.trim() || '';
+          const colorEl = modal.querySelector('.emb-swatch.emb-swatch--selected') || modal.querySelector('.emb-swatch[data-color]');
+          const color = colorEl ? (colorEl.dataset.color || colorEl.getAttribute('data-color') || '') : '';
+          const fontBtnSelected = modal.querySelector('.emb-font-btn--selected');
+          const font = fontBtnSelected?.dataset?.font || 'block';
+          const hasLogo = logoCheckbox.checked && logoInput.files.length > 0;
+          const logoName = hasLogo ? logoInput.files[0].name : '';
+          return { line1: l1, line2: l2, color, font, hasLogo, logoName };
+        }
+
+        function escapeHtml(str) {
+          if (!str) return '';
+          return String(str).replace(/[&<>"']/g, function (m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+          });
+        }
+
+        function renderSummary(data) {
+          summaryContainer.innerHTML = '';
+          const html = `
+            <div class="emb-summary card" style="margin:12px 0;padding:12px;border:1px solid #eee;border-radius:6px;display:flex;gap:12px;align-items:flex-start;">
+              <div class="emb-summary-thumb" style="width:84px;height:120px;background:#0b1a6a;color:#fff;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;padding:8px;font-size:12px;">
+                ${data.hasLogo ? '<span style="font-size:18px;margin-bottom:4px;">★</span>' : ''}
+                <div style="text-align:center;">${escapeHtml(data.line1 || 'Text')}<br/>${escapeHtml(data.line2 || '')}</div>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Custom Embroidery</div>
+                  <div style="font-weight:700">${escapeHtml(data.priceStr)}</div>
+                </div>
+                <div style="margin-top:8px;color:#333;font-size:13px;">
+                  ${data.hasLogo ? `<div><strong>Logo:</strong> ${escapeHtml(data.logoName)}</div>` : ''}
+                  ${(data.line1 || data.line2) ? `<div><strong>Text:</strong> ${escapeHtml([data.line1, data.line2].filter(Boolean).join(', '))}</div>` : ''}
+                  ${(data.line1 || data.line2) ? `<div><strong>Color:</strong> ${escapeHtml(data.color || 'Default')}</div>` : ''}
+                  ${(data.line1 || data.line2) ? `<div><strong>Font:</strong> ${escapeHtml(data.font || 'block')}</div>` : ''}
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="emb-edit-btn" title="Edit" style="background:none;border:0;color:#4b2c87;cursor:pointer;padding:6px;font-size:18px;">✎</button>
+                <button class="emb-delete-btn" title="Delete" style="background:none;border:0;color:#c0392b;cursor:pointer;padding:6px;font-size:18px;">🗑</button>
+              </div>
+            </div>
+          `;
+          summaryContainer.appendChild(createEl(html));
+
+          summaryContainer.querySelector('.emb-edit-btn').addEventListener('click', function () {
+            if (openBtn && !openBtn.disabled) openBtn.click();
+          });
+
+          summaryContainer.querySelector('.emb-delete-btn').addEventListener('click', async function () {
+            root._customizationData = null;
+            summaryContainer.innerHTML = '';
+            if (checkbox) { checkbox.checked = false; checkbox.dispatchEvent(new Event('change')); }
+            if (line1) line1.value = '';
+            if (line2) line2.value = '';
+            if (logoCheckbox) logoCheckbox.checked = false;
+            if (logoCheckbox) logoCheckbox.dispatchEvent(new Event('change'));
+            updatePreview();
+            if (root._customizationId) {
+              const cart = await fetchCart();
+              if (cart && cart.items) {
+                const toRemove = cart.items.filter(it =>
+                  (it.properties || {})['Customization ID'] === String(root._customizationId)
+                );
+                for (const it of toRemove) await removeCartItemByKey(it.key);
+              }
+              root._customizationId = null;
+              await cleanupOrphanAddonsOnCart();
+            }
+          });
+        }
+
+        function applyCustomization() {
+          const data = readCustomizationFromModal();
+          if (!data) return;
+          if (!data.line1 && !data.line2 && !data.hasLogo) {
+            alert("Please select text or upload a logo.");
+            return;
+          }
+          const customizationId = 'emb-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+          root._customizationId = customizationId;
+          const embPriceCents = embPriceCentsAttr || 0;
+          const priceStr = formatMoneyFromCents(embPriceCents);
+          root._customizationData = Object.assign({}, data, { priceStr, customizationId });
+          renderSummary({
+            customId: customizationId,
+            line1: data.line1,
+            line2: data.line2,
+            color: data.color,
+            font: data.font,
+            hasLogo: data.hasLogo,
+            logoName: data.logoName,
+            priceStr
+          });
+        }
+
+        form?.addEventListener('submit', function (e) {
+          e.preventDefault();
+          applyCustomization();
+          closeModal();
+        });
+
+        // --- PRODUCT FORM — context-aware selector ---
+
+        // --- updated block code to fix file upload issue ---
+      const PRODUCT_FORM_SELECTOR = '#product-form-{{ section.id }}';
+      const productForm = root.closest('form[action*="/cart/add"]')
+        || root.closest('[id*="product-form"]')
+        || document.querySelector(PRODUCT_FORM_SELECTOR)
+        || document.querySelector('form[action*="/cart/add"]');
+
+      if (!productForm) {
+        console.warn('Product form not found for embroidery block:', blockId);
+        return;
+      }
+
+      let isAdding = false;
+
+      async function handleFormSubmission(e, isBuyItNow) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        if (isAdding) return;
+        isAdding = true;
+
+        try {
+          const rawFormData = new FormData(productForm);
+          const mainVariantIdRaw = rawFormData.get('id') || rawFormData.get('variant') || rawFormData.get('product-id');
+          const mainVariantId = parseInt(mainVariantIdRaw || 0, 10);
+
+          if (!mainVariantId) {
+            console.error('No variant ID found');
+            isAdding = false;
+            return;
+          }
+
+          const quantityToAdd = parseInt(rawFormData.get('quantity') || '1', 10) || 1;
+
+          if (checkbox && checkbox.checked && !root._customizationData) {
+            alert('Please customize your embroidery before adding to cart');
+            openModal();
+            isAdding = false;
+            return;
+          }
+
+          const cart = await fetchCart();
+          let mergedQuantity = quantityToAdd;
+
+          if (cart && cart.items) {
+            const plainMainItems = cart.items.filter(it =>
+              it.variant_id === mainVariantId &&
+              !(it.properties || {})['Customization ID']
+            );
+            if (plainMainItems.length > 0) {
+              const plainQty = plainMainItems.reduce((sum, it) => sum + (it.quantity || 0), 0);
+              mergedQuantity += plainQty;
+              for (const it of plainMainItems) await removeCartItemByKey(it.key);
+            }
+          }
+
+          const customizationId = root._customizationData?.customizationId;
+          const redirectUrl = isBuyItNow ? '/checkout' : '/cart';
+
+          const existingCustomized = (cart && cart.items && customizationId) ? cart.items.find(it =>
+            it.variant_id === mainVariantId && 
+            String((it.properties || {})['Customization ID']) === String(customizationId)
+          ) : null;
+
+          const existingAddon = (cart && cart.items && customizationId) ? cart.items.find(it =>
+            (it.properties || {})['Customization ID'] === String(customizationId) &&
+            (it.properties || {})['Embroidery Add-on'] === 'Yes'
+          ) : null;
+
+          if (existingCustomized) {
+            const newQty = (existingCustomized.quantity || 0) + quantityToAdd;
+
+            // Update main product
+            await changeCartItemQuantity(existingCustomized.key, newQty);
+
+            if (checkbox.checked && addonVariantId) {
+
+              if (existingAddon) {
+                // Sync embroidery quantity with main product
+                await changeCartItemQuantity(existingAddon.key, newQty);
+
+              } else {
+                // Add embroidery with same quantity
+                const addonData = new FormData();
+                addonData.append('id', parseInt(addonVariantId, 10));
+                addonData.append('quantity', String(newQty));
+                addonData.append('properties[Customization ID]', customizationId);
+                addonData.append('properties[Linked Product]', String(mainVariantId));
+                addonData.append('properties[Embroidery Add-on]', 'Yes');
+
+                await fetch('/cart/add.js', {
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  body: addonData
+                });
+              }
+            }
+
+            await cleanupOrphanAddonsOnCart();
+            window.location = redirectUrl;
+            isAdding = false;
+            return;
+          }
+
+          // Use FormData generation instead of JSON to send raw file streams
+          const ajaxFormData = new FormData();
+          ajaxFormData.append('id', mainVariantId);
+          ajaxFormData.append('quantity', mergedQuantity);
+
+          if (root._customizationData) {
+            const cd = root._customizationData;
+            ajaxFormData.append('properties[Customization ID]', cd.customizationId);
+            ajaxFormData.append('properties[Embroidery Selected]', 'Yes');
+            
+            if (cd.line1 || cd.line2) {
+              ajaxFormData.append('properties[Text]', [cd.line1, cd.line2].filter(Boolean).join(', '));
+              ajaxFormData.append('properties[Color]', cd.color || 'Default');
+              ajaxFormData.append('properties[Font]', cd.font || 'block');
+            }
+            
+            if (cd.hasLogo && logoInput && logoInput.files.length > 0) {
+              ajaxFormData.append('properties[Logo]', logoInput.files[0]);
+              ajaxFormData.append('properties[Logo Position]', 'Left Chest');
+            }
+          }
+
+          const addResp = await fetch('/cart/add.js', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: ajaxFormData
+          });
+
+          if (!addResp || !addResp.ok) {
+            console.error('Add to cart failed:', addResp?.status);
+            alert('Failed to add to cart. Please try again.');
+            isAdding = false;
+            return;
+          }
+
+          if (checkbox.checked && addonVariantId && customizationId && !existingAddon) {
+            const addonData = new FormData();
+            addonData.append('id', parseInt(addonVariantId, 10));
+            addonData.append('quantity', String(mergedQuantity));
+            addonData.append('properties[Customization ID]', customizationId);
+            addonData.append('properties[Linked Product]', String(mainVariantId));
+            addonData.append('properties[Embroidery Add-on]', 'Yes');
+
+            await fetch('/cart/add.js', {
+              method: 'POST',
+              credentials: 'same-origin',
+              body: addonData
+            });
+          }
+
+          await addResp.json();
+          await cleanupOrphanAddonsOnCart();
+
+          if (isBuyItNow) {
+            CashfreeOcc.initCheckout(e.target);
+          } else {
+            window.location = redirectUrl;
+          }
+
+        } catch (err) {
+          console.error('Add-to-cart error:', err);
+          alert('An error occurred. Please try again.');
+        } finally {
+          isAdding = false;
+        }
+      }
+
+      // 1. Standard Add to Cart
+      productForm.addEventListener('submit', function (e) {
+        if (e._embHandled) return;
+        handleFormSubmission(e, false);
+      }, true);
+
+      // 2. Buy It Now — scoped to this block's product form context
+      productForm.addEventListener('click', async function (e) {
+        const buyItNowBtn = e.target.closest(
+          '.shopify-payment-button__button, ' +
+          '[data-testid="Checkout-button"], ' +
+          '[data-testid="Checkout-Button"], ' +
+          '.dynamic-checkout__button, ' +
+          '[data-shopify="payment-button"]'
+        );
+        if (!buyItNowBtn) return;
+
+        const clickedTarget = e.target;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+
+        if (!checkbox.checked && !root._customizationData) {
+          CashfreeOcc.initBuyItNow(clickedTarget);
+          return;
+        }
+        if (checkbox.checked && !root._customizationData) {
+          alert('Please customize your embroidery before proceeding.');
+          openModal();
+          return;
+        }
+
+        handleFormSubmission(e, true);
+      }, true);
+
+
+      } catch (errBlock) {
+        console.error('Embroidery block error:', errBlock);
+      }
+    }  
+
+    // Init all blocks currently in DOM
+    document.querySelectorAll('.custom-embroidery-block').forEach(initEmbroideryBlock);
+
+    // Watch for blocks injected dynamically (product modals/quick-view)
+    if (!window.__embBlockObserverInstalled) {
+      window.__embBlockObserverInstalled = true;
+      const blockObserver = new MutationObserver(function () {
+        document.querySelectorAll('.custom-embroidery-block').forEach(initEmbroideryBlock);
+      });
+      blockObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+    {% comment %} cstm_embd_call();
+
+  document.addEventListener('DOMContentLoaded', function () {
+    cstm_embd_call();
+    });
+  {% endcomment %}
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', cstm_embd_call);
+  } else {
+    cstm_embd_call();
+  }
+</script>
+
+<script>
+ 
+  function cstm_embd_call() {  
+
+    function formatMoneyFromCents(cents) {
+      cents = Number(cents) || 0;
+      try {
+        return (cents / 100).toLocaleString(undefined, {
+          style: 'currency',
+          currency: '{{ shop.currency }}'
+        });
+      } catch (e) {
+        return '₹' + (cents / 100).toFixed(2);
+      }
+    }
+
+    function createEl(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html.trim();
+      return div.firstChild;
+    }
+
+    async function fetchCart() {
+      try {
+        const r = await fetch('/cart.js', { credentials: 'same-origin' });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function removeCartItemByKey(itemKey) {
+      try {
+        const body = new URLSearchParams();
+        body.append('id', itemKey);
+        body.append('quantity', '0');
+        const r = await fetch('/cart/change.js', {
+          method: 'POST',
+          body: body.toString(),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          credentials: 'same-origin'
+        });
+        if (r.ok) setTimeout(() => cleanupOrphanAddonsOnCart(), 200);
+        return r.ok;
+      } catch (e) { return false; }
+    }
+
+    async function changeCartItemQuantity(itemKey, newQuantity) {
+      try {
+        const body = new URLSearchParams();
+        body.append('id', itemKey);
+        body.append('quantity', String(newQuantity));
+        const r = await fetch('/cart/change.js', {
+          method: 'POST',
+          body: body.toString(),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+          credentials: 'same-origin'
+        });
+        if (!r.ok) throw new Error('change failed');
+        return await r.json();
+      } catch (e) { return null; }
+    }
+
+    // CLEANUP ORPHAN ADDONS
+    async function cleanupOrphanAddonsOnCart() {
+      try {
+        const cart = await fetchCart();
+        if (!cart) return;
+        
+        const mainCustomizationIds = new Set();
+        cart.items.forEach(item => {
+          const props = item.properties || {};
+          if (props['Customization ID'] && props['Embroidery Add-on'] !== 'Yes') {
+            mainCustomizationIds.add(String(props['Customization ID']));
+          }
+        });
+
+        const addonGroups = {};
+        const toRemoveKeys = new Set();
+
+        cart.items.forEach(item => {
+          const props = item.properties || {};
+          if (props['Embroidery Add-on'] === 'Yes') {
+            const cid = String(props['Customization ID'] || '');
+            if (!cid || !mainCustomizationIds.has(cid)) {
+              toRemoveKeys.add(item.key);
+              return;
+            }
+            addonGroups[cid] = addonGroups[cid] || [];
+            addonGroups[cid].push(item);
+          }
+        });
+
+        Object.keys(addonGroups).forEach(cid => {
+          const arr = addonGroups[cid];
+          if (arr.length > 1) {
+            arr.slice(1).forEach(item => toRemoveKeys.add(item.key));
+          }
+        });
+
+        for (const key of Array.from(toRemoveKeys)) {
+          await removeCartItemByKey(key);
+        }
+      } catch (e) { console.error('cleanupOrphanAddonsOnCart', e); }
+    }
+
+    window.__cleanupEmbroideryOrphans = cleanupOrphanAddonsOnCart;
+    document.addEventListener('cart:updated', () => setTimeout(() => cleanupOrphanAddonsOnCart(), 300));
+    document.addEventListener('cart:refresh', () => setTimeout(() => cleanupOrphanAddonsOnCart(), 300));
+
+    if (window.location.pathname.startsWith('/cart')) {
+
+    cleanupOrphanAddonsOnCart();
+
+    // Debounced cleanup — waits for DOM to settle after OCC re-renders buttons
+    let debounceTimer = null;
+    function debouncedCleanup(delay) {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        cleanupOrphanAddonsOnCart();
+      }, delay || 800);
+    }
+
+    function installCartInterceptor() {
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+        if (url.includes('/cart/change') || url.includes('/cart/update')) {
+          return originalFetch.apply(this, args).then(async (response) => {
+            if (response.ok) {
+              // Cancel any pending cleanup and schedule fresh ones
+              // 800ms: after Shopify cart API settles
+              // 2500ms: after OCC MutationObserver finishes re-rendering buttons
+              if (window.__embCleanupTimers) {
+                window.__embCleanupTimers.forEach(t => clearTimeout(t));
+              }
+              window.__embCleanupTimers = [
+                setTimeout(() => cleanupOrphanAddonsOnCart(), 800),
+                setTimeout(() => cleanupOrphanAddonsOnCart(), 2500)
+              ];
+            }
+            return response;
+          });
+        }
+        return originalFetch.apply(this, args);
+      };
+    }
+
+    // Triple install to beat OCC re-wrapping window.fetch
+    installCartInterceptor();
+    setTimeout(installCartInterceptor, 500);
+    setTimeout(installCartInterceptor, 1000);
+
+    // DOM observer — debounced so OCC's button re-renders don't spam cleanup
+    const cartHolder = document.querySelector('form[action="/cart"]') || document.body;
+    const mo = new MutationObserver(() => debouncedCleanup(800));
+    mo.observe(cartHolder, { childList: true, subtree: true });
+  }
+
+  // PER-BLOCK LOGIC
+  function initEmbroideryBlock(root) {
+      if (root._embInitialized) return;
+      root._embInitialized = true;
+
+      try {
+        const blockId = root.getAttribute('data-block-id') || '';
+        const embPriceCentsAttr = parseInt(root.getAttribute('data-emb-price-cents') || '0', 10) || 0;
+        const addonVariantIdRaw = root.getAttribute('data-addon-variant-id') || '';
+        const addonVariantId = addonVariantIdRaw ? String(addonVariantIdRaw).trim() : '';
+
+        const checkbox = root.querySelector('.embroidery-trigger-checkbox');
+        const openBtn = root.querySelector('.embroidery-modal-btn');
+        const modal = document.getElementById('EmbroideryModal-' + blockId);
+        if (!checkbox || !openBtn || !modal) return;
+
+        const overlay = modal.querySelector('.embroidery-modal__overlay');
+        const closeBtns = modal.querySelectorAll('[data-close-modal]');
+        const form = modal.querySelector('.embroidery-form');
+        const priceEl = root.querySelector('[data-embroidery-price]');
+
+        if (priceEl && embPriceCentsAttr > 0) priceEl.textContent = formatMoneyFromCents(embPriceCentsAttr);
+
+        if (!modal.dataset.moved) {
+          document.body.appendChild(modal);
+          modal.dataset.moved = 'true';
+        }
+
+        const line1 = modal.querySelector('#emb-line1-' + blockId);
+        const line2 = modal.querySelector('#emb-line2-' + blockId);
+        const logoCheckbox = modal.querySelector('#add-logo-' + blockId);
+        const logoInput = modal.querySelector('#emb-file-' + blockId);
+        const logoCustomText = modal.querySelector('.emb-file-custom-text');
+        const logoInputsContainer = modal.querySelector('.emb-logo-inputs');
+
+        const previewText = modal.querySelector('[data-preview-text]');
+        const previewSub = modal.querySelector('[data-preview-subtext]');
+        const previewLogoImg = modal.querySelector('.preview-logo-image');
+        const previewLogoPlaceholder = modal.querySelector('.preview-placeholder-logo');
+
+        const swatches = Array.from(modal.querySelectorAll('.emb-swatch'));
+        const fontBtns = Array.from(modal.querySelectorAll('.emb-font-btn'));
+
+        swatches.forEach(btn => {
+          const colorVal = btn.dataset.color || btn.getAttribute('data-color') || '';
+          if (colorVal) btn.style.backgroundColor = colorVal;
+          btn.setAttribute('aria-label', btn.title || colorVal || 'color');
+        });
+
+        function syncButtonState() {
+          openBtn.disabled = !checkbox.checked;
+        }
+        checkbox.addEventListener('change', syncButtonState);
+        syncButtonState();
+
+        function openModal() { modal.setAttribute('aria-hidden', 'false'); }
+        function closeModal() { modal.setAttribute('aria-hidden', 'true'); }
+        openBtn.addEventListener('click', function () { if (!openBtn.disabled) openModal(); });
+        overlay?.addEventListener('click', closeModal);
+        closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') closeModal();
+        });
+
+        logoCheckbox.addEventListener('change', function () {
+          if (this.checked) {
+            logoInputsContainer.style.display = 'block';
+          } else {
+            logoInputsContainer.style.display = 'none';
+            logoInput.value = '';
+            previewLogoImg.src = '';
+            previewLogoImg.style.display = 'none';
+            previewLogoPlaceholder.style.display = 'none';
+          }
+        });
+
+        logoInput.addEventListener('change', function (e) {
+          const file = e.target.files[0];
+          if (file) {
+            logoCustomText.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+              previewLogoImg.src = evt.target.result;
+              previewLogoImg.style.display = 'block';
+              previewLogoPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+          } else {
+            logoCustomText.innerHTML = '<span class="emb-upload-icon">📁</span> Choose File...';
+            previewLogoImg.style.display = 'none';
+            previewLogoPlaceholder.style.display = 'none';
+          }
+        });
+
+        function updatePreview() {
+          const v1 = line1?.value?.trim() || '';
+          const v2 = line2?.value?.trim() || '';
+          if (previewText) previewText.textContent = v1 || 'Line 1';
+          if (previewSub) previewSub.textContent = v2 || '';
+        }
+        line1?.addEventListener('input', updatePreview);
+        line2?.addEventListener('input', updatePreview);
+        updatePreview();
+
+        swatches.forEach(btn => {
+          btn.addEventListener('click', function () {
+            swatches.forEach(s => s.classList.remove('emb-swatch--selected'));
+            this.classList.add('emb-swatch--selected');
+            const color = this.dataset.color || this.getAttribute('data-color') || '';
+            if (previewText) previewText.style.color = color;
+            if (previewSub) previewSub.style.color = color;
+          });
+        });
+
+        fontBtns.forEach(btn => {
+          btn.addEventListener('click', function () {
+            fontBtns.forEach(b => b.classList.remove('emb-font-btn--selected'));
+            this.classList.add('emb-font-btn--selected');
+            const font = this.dataset.font || 'block';
+            if (previewText) previewText.className = 'preview-text preview-font-' + font;
+            if (previewSub) previewSub.className = 'preview-text preview-subline preview-font-' + font;
+          });
+        });
+
+        let summaryContainer = root.querySelector('.embroidery-summary-container');
+        const toggleWrapper = root.querySelector('.embroidery-toggle-wrapper');
+        if (!summaryContainer) {
+          summaryContainer = document.createElement('div');
+          summaryContainer.className = 'embroidery-summary-container';
+          if (toggleWrapper && toggleWrapper.parentNode) toggleWrapper.parentNode.insertBefore(summaryContainer, toggleWrapper.nextSibling);
+          else root.appendChild(summaryContainer);
+        }
+
+        function readCustomizationFromModal() {
+          const l1 = line1?.value?.trim() || '';
+          const l2 = line2?.value?.trim() || '';
+          const colorEl = modal.querySelector('.emb-swatch.emb-swatch--selected') || modal.querySelector('.emb-swatch[data-color]');
+          const color = colorEl ? (colorEl.dataset.color || colorEl.getAttribute('data-color') || '') : '';
+          const fontBtnSelected = modal.querySelector('.emb-font-btn--selected');
+          const font = fontBtnSelected?.dataset?.font || 'block';
+          const hasLogo = logoCheckbox.checked && logoInput.files.length > 0;
+          const logoName = hasLogo ? logoInput.files[0].name : '';
+          return { line1: l1, line2: l2, color, font, hasLogo, logoName };
+        }
+
+        function escapeHtml(str) {
+          if (!str) return '';
+          return String(str).replace(/[&<>"']/g, function (m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+          });
+        }
+
+        function renderSummary(data) {
+          summaryContainer.innerHTML = '';
+          const html = `
+            <div class="emb-summary card" style="margin:12px 0;padding:12px;border:1px solid #eee;border-radius:6px;display:flex;gap:12px;align-items:flex-start;">
+              <div class="emb-summary-thumb" style="width:84px;height:120px;background:#0b1a6a;color:#fff;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;padding:8px;font-size:12px;">
+                ${data.hasLogo ? '<span style="font-size:18px;margin-bottom:4px;">★</span>' : ''}
+                <div style="text-align:center;">${escapeHtml(data.line1 || 'Text')}<br/>${escapeHtml(data.line2 || '')}</div>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Custom Embroidery</div>
+                  <div style="font-weight:700">${escapeHtml(data.priceStr)}</div>
+                </div>
+                <div style="margin-top:8px;color:#333;font-size:13px;">
+                  ${data.hasLogo ? `<div><strong>Logo:</strong> ${escapeHtml(data.logoName)}</div>` : ''}
+                  ${(data.line1 || data.line2) ? `<div><strong>Text:</strong> ${escapeHtml([data.line1, data.line2].filter(Boolean).join(', '))}</div>` : ''}
+                  ${(data.line1 || data.line2) ? `<div><strong>Color:</strong> ${escapeHtml(data.color || 'Default')}</div>` : ''}
+                  ${(data.line1 || data.line2) ? `<div><strong>Font:</strong> ${escapeHtml(data.font || 'block')}</div>` : ''}
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="emb-edit-btn" title="Edit" style="background:none;border:0;color:#4b2c87;cursor:pointer;padding:6px;font-size:18px;">✎</button>
+                <button class="emb-delete-btn" title="Delete" style="background:none;border:0;color:#c0392b;cursor:pointer;padding:6px;font-size:18px;">🗑</button>
+              </div>
+            </div>
+          `;
+          summaryContainer.appendChild(createEl(html));
+
+          summaryContainer.querySelector('.emb-edit-btn').addEventListener('click', function () {
+            if (openBtn && !openBtn.disabled) openBtn.click();
+          });
+
+          summaryContainer.querySelector('.emb-delete-btn').addEventListener('click', async function () {
+            root._customizationData = null;
+            summaryContainer.innerHTML = '';
+            if (checkbox) { checkbox.checked = false; checkbox.dispatchEvent(new Event('change')); }
+            if (line1) line1.value = '';
+            if (line2) line2.value = '';
+            if (logoCheckbox) logoCheckbox.checked = false;
+            if (logoCheckbox) logoCheckbox.dispatchEvent(new Event('change'));
+            updatePreview();
+            if (root._customizationId) {
+              const cart = await fetchCart();
+              if (cart && cart.items) {
+                const toRemove = cart.items.filter(it =>
+                  (it.properties || {})['Customization ID'] === String(root._customizationId)
+                );
+                for (const it of toRemove) await removeCartItemByKey(it.key);
+              }
+              root._customizationId = null;
+              await cleanupOrphanAddonsOnCart();
+            }
+          });
+        }
+
+        function applyCustomization() {
+          const data = readCustomizationFromModal();
+          if (!data) return;
+          if (!data.line1 && !data.line2 && !data.hasLogo) {
+            alert("Please select text or upload a logo.");
+            return;
+          }
+          const customizationId = 'emb-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+          root._customizationId = customizationId;
+          const embPriceCents = embPriceCentsAttr || 0;
+          const priceStr = formatMoneyFromCents(embPriceCents);
+          root._customizationData = Object.assign({}, data, { priceStr, customizationId });
+          renderSummary({
+            customId: customizationId,
+            line1: data.line1,
+            line2: data.line2,
+            color: data.color,
+            font: data.font,
+            hasLogo: data.hasLogo,
+            logoName: data.logoName,
+            priceStr
+          });
+        }
+
+        form?.addEventListener('submit', function (e) {
+          e.preventDefault();
+          applyCustomization();
+          closeModal();
+        });
+
+        // --- PRODUCT FORM — context-aware selector ---
+
+        // --- updated block code to fix file upload issue ---
+      const PRODUCT_FORM_SELECTOR = '#product-form-{{ section.id }}';
+      const productForm = root.closest('form[action*="/cart/add"]')
+        || root.closest('[id*="product-form"]')
+        || document.querySelector(PRODUCT_FORM_SELECTOR)
+        || document.querySelector('form[action*="/cart/add"]');
+
+      if (!productForm) {
+        console.warn('Product form not found for embroidery block:', blockId);
+        return;
+      }
+
+      let isAdding = false;
+
+      async function handleFormSubmission(e, isBuyItNow) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        if (isAdding) return;
+        isAdding = true;
+
+        try {
+          const rawFormData = new FormData(productForm);
+          const mainVariantIdRaw = rawFormData.get('id') || rawFormData.get('variant') || rawFormData.get('product-id');
+          const mainVariantId = parseInt(mainVariantIdRaw || 0, 10);
+
+          if (!mainVariantId) {
+            console.error('No variant ID found');
+            isAdding = false;
+            return;
+          }
+
+          const quantityToAdd = parseInt(rawFormData.get('quantity') || '1', 10) || 1;
+
+          if (checkbox && checkbox.checked && !root._customizationData) {
+            alert('Please customize your embroidery before adding to cart');
+            openModal();
+            isAdding = false;
+            return;
+          }
+
+          const cart = await fetchCart();
+          let mergedQuantity = quantityToAdd;
+
+          if (cart && cart.items) {
+            const plainMainItems = cart.items.filter(it =>
+              it.variant_id === mainVariantId &&
+              !(it.properties || {})['Customization ID']
+            );
+            if (plainMainItems.length > 0) {
+              const plainQty = plainMainItems.reduce((sum, it) => sum + (it.quantity || 0), 0);
+              mergedQuantity += plainQty;
+              for (const it of plainMainItems) await removeCartItemByKey(it.key);
+            }
+          }
+
+          const customizationId = root._customizationData?.customizationId;
+          const redirectUrl = isBuyItNow ? '/checkout' : '/cart';
+
+          const existingCustomized = (cart && cart.items && customizationId) ? cart.items.find(it =>
+            it.variant_id === mainVariantId && 
+            String((it.properties || {})['Customization ID']) === String(customizationId)
+          ) : null;
+
+          const existingAddon = (cart && cart.items && customizationId) ? cart.items.find(it =>
+            (it.properties || {})['Customization ID'] === String(customizationId) &&
+            (it.properties || {})['Embroidery Add-on'] === 'Yes'
+          ) : null;
+
+          if (existingCustomized) {
+            const newQty = (existingCustomized.quantity || 0) + quantityToAdd;
+            await changeCartItemQuantity(existingCustomized.key, newQty);
+            
+            if (!existingAddon && addonVariantId && checkbox.checked) {
+              const addonData = new FormData();
+              addonData.append('id', parseInt(addonVariantId, 10));
+              addonData.append('quantity', '1');
+              addonData.append('properties[Customization ID]', customizationId);
+              addonData.append('properties[Linked Product]', String(mainVariantId));
+              addonData.append('properties[Embroidery Add-on]', 'Yes');
+
+              await fetch('/cart/add.js', { method: 'POST', credentials: 'same-origin', body: addonData });
+            }
+            
+            await cleanupOrphanAddonsOnCart();
+            if (isBuyItNow) {
+              CashfreeOcc.initCheckout(e.target);
+            } else {
+              window.location = redirectUrl;
+            }
+            isAdding = false;
+            return;
+          }
+
+          // Use FormData generation instead of JSON to send raw file streams
+          const ajaxFormData = new FormData();
+          ajaxFormData.append('id', mainVariantId);
+          ajaxFormData.append('quantity', mergedQuantity);
+
+          if (root._customizationData) {
+            const cd = root._customizationData;
+            ajaxFormData.append('properties[Customization ID]', cd.customizationId);
+            ajaxFormData.append('properties[Embroidery Selected]', 'Yes');
+            
+            if (cd.line1 || cd.line2) {
+              ajaxFormData.append('properties[Text]', [cd.line1, cd.line2].filter(Boolean).join(', '));
+              ajaxFormData.append('properties[Color]', cd.color || 'Default');
+              ajaxFormData.append('properties[Font]', cd.font || 'block');
+            }
+            
+            if (cd.hasLogo && logoInput && logoInput.files.length > 0) {
+              ajaxFormData.append('properties[Logo]', logoInput.files[0]);
+              ajaxFormData.append('properties[Logo Position]', 'Left Chest');
+            }
+          }
+
+          const addResp = await fetch('/cart/add.js', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: ajaxFormData
+          });
+
+          if (!addResp || !addResp.ok) {
+            console.error('Add to cart failed:', addResp?.status);
+            alert('Failed to add to cart. Please try again.');
+            isAdding = false;
+            return;
+          }
+
+          if (checkbox.checked && addonVariantId && customizationId && !existingAddon) {
+            const addonData = new FormData();
+            addonData.append('id', parseInt(addonVariantId, 10));
+            addonData.append('quantity', String(mergedQuantity));
+            addonData.append('properties[Customization ID]', customizationId);
+            addonData.append('properties[Linked Product]', String(mainVariantId));
+            addonData.append('properties[Embroidery Add-on]', 'Yes');
+
+            await fetch('/cart/add.js', {
+              method: 'POST',
+              credentials: 'same-origin',
+              body: addonData
+            });
+          }
+
+          await addResp.json();
+          await cleanupOrphanAddonsOnCart();
+
+          if (isBuyItNow) {
+            CashfreeOcc.initCheckout(e.target);
+          } else {
+            window.location = redirectUrl;
+          }
+
+        } catch (err) {
+          console.error('Add-to-cart error:', err);
+          alert('An error occurred. Please try again.');
+        } finally {
+          isAdding = false;
+        }
+      }
+
+      // 1. Standard Add to Cart
+      productForm.addEventListener('submit', function (e) {
+        if (e._embHandled) return;
+        handleFormSubmission(e, false);
+      }, true);
+
+      // 2. Buy It Now — scoped to this block's product form context
+      productForm.addEventListener('click', async function (e) {
+        const buyItNowBtn = e.target.closest(
+          '.shopify-payment-button__button, ' +
+          '[data-testid="Checkout-button"], ' +
+          '[data-testid="Checkout-Button"], ' +
+          '.dynamic-checkout__button, ' +
+          '[data-shopify="payment-button"]'
+        );
+        if (!buyItNowBtn) return;
+
+        const clickedTarget = e.target;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+
+        if (!checkbox.checked && !root._customizationData) {
+          CashfreeOcc.initBuyItNow(clickedTarget);
+          return;
+        }
+        if (checkbox.checked && !root._customizationData) {
+          alert('Please customize your embroidery before proceeding.');
+          openModal();
+          return;
+        }
+
+        handleFormSubmission(e, true);
+      }, true);
+
+
+      } catch (errBlock) {
+        console.error('Embroidery block error:', errBlock);
+      }
+    }  
+
+    // Init all blocks currently in DOM
+    document.querySelectorAll('.custom-embroidery-block').forEach(initEmbroideryBlock);
+
+    // Watch for blocks injected dynamically (product modals/quick-view)
+    if (!window.__embBlockObserverInstalled) {
+      window.__embBlockObserverInstalled = true;
+      const blockObserver = new MutationObserver(function () {
+        document.querySelectorAll('.custom-embroidery-block').forEach(initEmbroideryBlock);
+      });
+      blockObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+    {% comment %} cstm_embd_call();
+
+  document.addEventListener('DOMContentLoaded', function () {
+    cstm_embd_call();
+    });
+  {% endcomment %}
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', cstm_embd_call);
+  } else {
+    cstm_embd_call();
+  }
+</script>
+
